@@ -1,0 +1,15 @@
+__pycache__
+.*_checkpoints
+
+*.tmp
+
+# Directory
+bin
+data
+gallery
+test
+
+# Figures
+*.pdf
+*.txt
+# *.svg
