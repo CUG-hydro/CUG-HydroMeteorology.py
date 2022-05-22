@@ -1,4 +1,6 @@
 import numpy as np
+import os
+from glob import glob 
 
 
 def as_rowvec(x):
@@ -40,6 +42,16 @@ def c(*args, **kwargs):
     return np.array([*args], **kwargs)
 
 def seq(start, stop = None, by = 1, len = None):
+    """
+    seq(start, stop = None, by = 1, len = None)
+    
+    # Examples
+    ```python
+    seq(3) = c(1, 2, 3)
+    seq(3, 6) = c(3, 4, 5)# not include the last
+    seq(3, 6, 2) = c(3, 6)
+    ```
+    """
     if len != None:
         return np.linspace(start, stop, len)
     else:
@@ -47,7 +59,7 @@ def seq(start, stop = None, by = 1, len = None):
         return np.arange(start, stop, by)
     # seq = lambda *args, **keywords: np.arange(*args, **keywords)
 
-# seq(3) = c(1, 2, 3)
-# seq(3, 6) = c(3, 4, 5)# not include the last
-# seq(3, 6, 2) = c(3, 6)
 
+def r_dir(path, pattern = "*"):
+  path = os.path.join(path, pattern)
+  return glob(path)

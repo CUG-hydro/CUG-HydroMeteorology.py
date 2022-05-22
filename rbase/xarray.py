@@ -3,6 +3,15 @@ import xarray as xr
 import numpy as np
 
 
+def get_coords(ds):
+    dimnames = list(ds.coords)
+    dim_lon = [i for i in dimnames if "lon" in i][0]
+    dim_lat = [i for i in dimnames if "lat" in i][0]
+    lon = ds[dim_lon].values
+    lat = ds[dim_lat].values
+    return lon, lat
+
+
 def subset(xarr, bbox):
     """
     """
@@ -15,7 +24,7 @@ xarray.core.dataset.Dataset.subset = subset
 
 
 # %%
-def read_grib(file, bbox = None, multi_lev=False, **kwargs):
+def read_grib(file, bbox = None, timezone = 8, multi_lev=False, **kwargs):
     """
     # Parameters
     - `**kwargs`: other parameters to [xr.open_dataset()]
@@ -24,24 +33,34 @@ def read_grib(file, bbox = None, multi_lev=False, **kwargs):
     if multi_lev:
         option_dimname["isobaricInhPa"] = "lev"
 
-    data = xr.open_dataset(file, backend_kwargs={"errors": "ignore"}, **kwargs)
-    data = data.assign_coords(
-        time=data.coords["time"].data + np.timedelta64(8, "h"))
+    ds = xr.open_dataset(file, backend_kwargs={"errors": "ignore"}, **kwargs)
+    ds = set_timezone(ds, timezone = timezone)
     data = data.rename(option_dimname)
     if not(bbox is None):
         data = data.subset(bbox)
     return data
 
-
-def shift_time(x, hours=6):
+def shift_time(time, hours=6):
     """
     shift time by hours
+    #!DEPRECATED
 
     # Arguments:
     - `x`: xarray object
     """
     x = x.assign_coords(time=x.time.data + np.timedelta64(hours, "h"))
     return x
+    
+def set_timezone(ds, timezone = 8):
+    time = ds.coords["time"].data + np.timedelta64(timezone, "h")
+    return ds.assign_coords(time = time)
+
+def read_nc(file, bbox = None, timezone = 8, **kwargs):
+    ds = xr.open_dataset(file, **kwargs)
+    ds = set_timezone(ds, timezone = timezone)
+    if not(bbox is None):
+        data = data.subset(bbox)
+    return data
 
 
 def ERA5_Prcp_StackOverTime(x):

@@ -12,4 +12,10 @@ test
 # Figures
 *.pdf
 *.txt
+*.gif
 # *.svg
+Figures/
+gallery/
+
+## DATA
+*.nc

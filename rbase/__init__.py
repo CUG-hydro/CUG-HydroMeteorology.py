@@ -9,6 +9,8 @@ from .base import *
 from .plot import *
 from .xarray import *
 from .scipy import *
+from .date import *
+from .write_fig import *
 
 typeof = type
 length = len
