@@ -105,8 +105,8 @@ for i in seq(0, 2):
 
     # 2. add H, L for gph
     nsize = 100
-    plot_maxmin_points(ax, z, nsize, "max", "H", "red")
-    plot_maxmin_points(ax, z, nsize, "min", "L", "blue")
+    plot_maxmin_points(z, nsize, "max", "H", "red")
+    plot_maxmin_points(z, nsize, "min", "L", "blue")
 
 h = plt.suptitle('Valid Time: {}\n'.format(date), fontsize=16)
 # h = h.set_y(0.95) # change height

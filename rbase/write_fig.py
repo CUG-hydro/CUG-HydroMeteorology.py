@@ -1,6 +1,8 @@
+from tkinter import N
 from PyPDF2 import PdfFileMerger
 import os
 from PIL import Image
+import matplotlib.pyplot as plt
 # import glob
 # import re
 
@@ -25,3 +27,10 @@ def images2gif(files, outfile="Plot.gif", duration=250):
     img, *imgs = [Image.open(f) for f in sorted(files)]
     img.save(fp=outfile, format='GIF', append_images=imgs,
              save_all=True, duration=duration, loop=0)
+
+
+def write_fig(path="Plot.pdf", width=10, height=6, dpi=300, forward=False):
+    # https://stackoverflow.com/questions/332289/how-do-i-change-the-size-of-figures-drawn-with-matplotlib
+    fig = plt.gcf()
+    fig.set_size_inches(width, height, forward=forward)
+    fig.savefig(path, dpi=dpi)

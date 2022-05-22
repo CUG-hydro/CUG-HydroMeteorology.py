@@ -40,7 +40,8 @@ def setMapAxis(ax,
     return ax
 
 
-def add_China(ax, range = [70, 160, 5, 55]):
+def add_China(range = [70, 160, 5, 55]):
+    ax = plt.gca()
     dx = 10
     dy = 5
     lon=np.arange(range[0], range[1] + dx/2, 10)
@@ -48,7 +49,7 @@ def add_China(ax, range = [70, 160, 5, 55]):
     ax = setMapAxis(ax, lon, lat)
     ax.set_xlim(xmin=range[0], xmax=range[1])
     ax.set_ylim(ymin=range[2], ymax=range[3])
-    add_shape(ax, "data/bou2_4p_ChinaProvince.shp")
+    add_shape(ax, "data/shp/bou2_4p_ChinaProvince.shp")
     return ax
 
 
@@ -108,7 +109,8 @@ def add_cbar(bounds, cmap=cmaps.amwg256, extend="both", **kwargs):
     # cb1.set_label('Default BoundaryNorm ouput')
 
 
-def r_contourf(ax, ds, brks = [0.1, 0.2, 0.5, 1, 2, 5]):
+def r_contourf(ds, brks = [0.1, 0.2, 0.5, 1, 2, 5]):
+    ax = plt.gca()
     ncol = (len(brks) - 1) * 2
     # cmap = cmaps.amwg256
     cmap = get_cmap(ncol=ncol)
@@ -129,25 +131,33 @@ def r_contourf(ax, ds, brks = [0.1, 0.2, 0.5, 1, 2, 5]):
         aspect=30, shrink=0.8, pad=0.05)
 
 
-def contourf_gph500(ax, z, clevs = None, colors = ('tab:blue', 'tab:red', 'r')):
+# 500hPa z brks
+def get_zbrks(mid=588, half=10, by=4):
+    return (
+        np.arange(mid - by*half, mid, by), 
+        np.array([mid]), 
+        np.arange(mid, mid + by*half, by), 
+    )
+
+def contour_z500(z, brks = None, colors = ('tab:blue', 'tab:red', 'r'), **kw):
     """
     Plot thickness with multiple colors
-
+    
+    # Argument
+    - `**kw`: others to [get_zbrks()]
+    
     # Examples
     ```python
-    clevs = (np.arange(0, 5400, 60),
+    brks = (np.arange(0, 5400, 60),
             np.array([5400]),
             np.arange(5460, 7000, 60))
     ```
     """
-    if clevs == None:
-        delta = 4
-        clevs = (np.arange(588 - delta*4, 588, delta),
-                np.array([588]),
-                np.arange(588+delta, 600, delta))
+    ax = plt.gca()
+    if brks == None:
+        brks = get_zbrks(588, **kw)
     
     lon, lat = get_coords(z)
-    
     # if colors == None:
     #     colors = ('tab:blue', 'b', 'tab:red')
     kw_clabels = {'fontsize': 11, 'inline': True, 'inline_spacing': 10, 'fmt': '%i',
@@ -155,7 +165,7 @@ def contourf_gph500(ax, z, clevs = None, colors = ('tab:blue', 'tab:red', 'r')):
         'rightside_up': True
     #   'use_clabeltext': True
         }
-    for clevthick, color in zip(clevs, colors):
+    for clevthick, color in zip(brks, colors):
         # linestyle = "solid" if color == 'r' else "dashed"
         linestyle = "solid"
         cs = ax.contour(lon, lat, z, levels=clevthick, colors=color,
@@ -164,7 +174,7 @@ def contourf_gph500(ax, z, clevs = None, colors = ('tab:blue', 'tab:red', 'r')):
         plt.clabel(cs, **kw_clabels)
 
 
-def plot_maxmin_points(ax, ds, nsize = 12, 
+def plot_maxmin_points(z, nsize = 12, 
     extrema = "max", symbol = "H", color='k', transform=None):
     """
     This function will find and plot relative maximum and minimum for a 2D grid.
@@ -190,9 +200,9 @@ def plot_maxmin_points(ax, ds, nsize = 12,
     - https://unidata.github.io/python-gallery/examples/HILO_Symbol_Plot.html
     """
     from scipy.ndimage.filters import maximum_filter, minimum_filter
-
-    lon, lat = get_coords(ds)
-    data = ds.values
+    ax = plt.gca()
+    lon, lat = get_coords(z)
+    data = z.values
 
     if (extrema == 'max'):
         data_ext = maximum_filter(data, nsize, mode='nearest')
