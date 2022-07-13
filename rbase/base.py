@@ -63,3 +63,9 @@ def seq(start, stop = None, by = 1, len = None):
 def r_dir(path, pattern = "*"):
   path = os.path.join(path, pattern)
   return glob(path)
+
+
+def size(x):
+  return x.shape
+
+dim = size

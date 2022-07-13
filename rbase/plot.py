@@ -13,6 +13,11 @@ from cartopy.feature import ShapelyFeature
 import cartopy.feature as cfeature
 
 
+from scipy.ndimage import gaussian_filter
+from scipy.ndimage.filters import maximum_filter, minimum_filter
+
+from metpy.units import units
+
 def add_shape(ax, shp, linewidth=0.3, **kw):
     shape_feature = ShapelyFeature(Reader(shp).geometries(),
                                 ccrs.PlateCarree(), facecolor='none', )
@@ -40,7 +45,7 @@ def setMapAxis(ax,
     return ax
 
 
-def add_China(range = [70, 160, 5, 55]):
+def add_china(range = [70, 160, 5, 55]):
     ax = plt.gca()
     dx = 10
     dy = 5
@@ -49,7 +54,7 @@ def add_China(range = [70, 160, 5, 55]):
     ax = setMapAxis(ax, lon, lat)
     ax.set_xlim(xmin=range[0], xmax=range[1])
     ax.set_ylim(ymin=range[2], ymax=range[3])
-    add_shape(ax, "data/shp/bou2_4p_ChinaProvince.shp")
+    add_shape(ax, "data/shp/bou2_4p_ChinaProvince_sml.shp")
     return ax
 
 
@@ -109,7 +114,7 @@ def add_cbar(bounds, cmap=cmaps.amwg256, extend="both", **kwargs):
     # cb1.set_label('Default BoundaryNorm ouput')
 
 
-def r_contourf(ds, brks = [0.1, 0.2, 0.5, 1, 2, 5]):
+def r_contourf(ds, brks = [0.1, 0.2, 0.5, 1, 2, 5], show_cbar=True):
     ax = plt.gca()
     ncol = (len(brks) - 1) * 2
     # cmap = cmaps.amwg256
@@ -123,12 +128,13 @@ def r_contourf(ds, brks = [0.1, 0.2, 0.5, 1, 2, 5]):
         # linewidths=1.0, linestyles=linestyle,
         extend="both",
         transform=ax.projection)
-    norm = mpl.colors.BoundaryNorm(brks, cmap.N)  
-    ax.figure.colorbar(
-        mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
-        orientation='horizontal',
-        extend="both",
-        aspect=30, shrink=0.8, pad=0.05)
+    if show_cbar:
+        norm = mpl.colors.BoundaryNorm(brks, cmap.N)  
+        ax.figure.colorbar(
+            mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+            orientation='horizontal',
+            extend="both",
+            aspect=30, shrink=0.8, pad=0.05)
 
 
 # 500hPa z brks
@@ -139,7 +145,7 @@ def get_zbrks(mid=588, half=10, by=4):
         np.arange(mid, mid + by*half, by), 
     )
 
-def contour_z500(z, brks = None, colors = ('tab:blue', 'tab:red', 'r'), **kw):
+def contour_z(z, brks = None, lev=500, colors = ('tab:blue', 'tab:red', 'r'), **kw):
     """
     Plot thickness with multiple colors
     
@@ -155,7 +161,12 @@ def contour_z500(z, brks = None, colors = ('tab:blue', 'tab:red', 'r'), **kw):
     """
     ax = plt.gca()
     if brks == None:
-        brks = get_zbrks(588, **kw)
+        if lev == 500:
+            brks = get_zbrks(588, **kw)
+        elif lev > 500:
+            brks = get_zbrks(150, **kw)
+        else:
+            brks = get_zbrks(1200, **kw)
     
     lon, lat = get_coords(z)
     # if colors == None:
@@ -165,13 +176,16 @@ def contour_z500(z, brks = None, colors = ('tab:blue', 'tab:red', 'r'), **kw):
         'rightside_up': True
     #   'use_clabeltext': True
         }
+    lwd = c(0.7, 1.5, 0.7)
+    k = 0
     for clevthick, color in zip(brks, colors):
         # linestyle = "solid" if color == 'r' else "dashed"
         linestyle = "solid"
         cs = ax.contour(lon, lat, z, levels=clevthick, colors=color,
-                        linewidths=1.5, linestyles=linestyle, 
+                        linewidths=lwd[k], linestyles=linestyle, 
                         transform=ax.projection)
         plt.clabel(cs, **kw_clabels)
+        k=k+1
 
 
 def plot_maxmin_points(z, nsize = 12, 
@@ -199,7 +213,7 @@ def plot_maxmin_points(z, nsize = 12,
     # References
     - https://unidata.github.io/python-gallery/examples/HILO_Symbol_Plot.html
     """
-    from scipy.ndimage.filters import maximum_filter, minimum_filter
+    
     ax = plt.gca()
     lon, lat = get_coords(z)
     data = z.values
@@ -225,3 +239,44 @@ def plot_maxmin_points(z, nsize = 12,
             '\n' + str(np.int(data[Ilat[i], Ilon[i]])),
             color=color, size=12, clip_on=True, fontweight='bold',
             horizontalalignment='center', verticalalignment='top', transform=ax.projection)
+
+
+# mixing_ratio = np.array([0.0004, 0.001, 0.002, 0.004, 0.007, 0.01, 
+#     0.016, 0.024, 0.032]).reshape(-1, 1)
+# ax.text(x, y, '\n' + str(np.int(data[Ilat[i], Ilon[i]])),
+#             color=color, size=12, clip_on=True, fontweight='bold',
+#             horizontalalignment='center', verticalalignment='top', transform=ax.projection)
+
+def smooth_uv(u, v, sigma=3.0, unit = units('m/s')):
+    """
+    # Arguments:
+    - `unit`: `units('m/s')`
+    """
+    u = gaussian_filter(u.data, sigma=sigma) * unit
+    v = gaussian_filter(v.data, sigma=sigma) * unit
+    return u, v
+
+
+def add_wind(ds, step = 10, length = 6, **kw):
+    """
+    https://matplotlib.org/stable/api/_as_gen/matplotlib.axes.Axes.barbs.html
+    ## Arguments:
+
+    - `barb_increments`: dict(half=5, full=10, flag=50)
+    """
+    ax = plt.gca()
+    ind = (slice(None, None, step), slice(None, None, step))
+    
+    u = ds["u"][ind[0], ind[1]]
+    v = ds["v"][ind[0], ind[1]]
+    u, v = smooth_uv(u, v)
+    lon, lat = get_coords(ds)
+    ax.barbs(lon[ind[0]], lat[ind[1]],
+            u.to('kt').m, v.to('kt').m,
+            #  fill_empty = True, 
+             length = length, **kw,
+             barb_increments=dict(half=5, full=10, flag=50),
+            #  barb_increments=dict(half=2, full=4, flag=10),
+            sizes=dict(emptybarb=0, spacing=0.2, height=0.3),
+            #  pivot='middle', 
+            color='black', transform=ax.projection)
