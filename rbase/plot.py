@@ -18,7 +18,7 @@ from scipy.ndimage.filters import maximum_filter, minimum_filter
 
 from metpy.units import units
 
-def add_shape(ax, shp, linewidth=0.3, **kw):
+def add_shape(ax, shp, linewidth=0.4, **kw):
     shape_feature = ShapelyFeature(Reader(shp).geometries(),
                                 ccrs.PlateCarree(), facecolor='none', )
     ax.add_feature(shape_feature, linewidth=linewidth, **kw)

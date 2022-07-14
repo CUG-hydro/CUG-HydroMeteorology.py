@@ -4,10 +4,16 @@ import metpy
 import metpy.calc as mpcalc
 
 
-ds_surf_raw = xr.open_dataset("data/ERA5_202205_Asia_prcp.nc")
+indir = "scripts"
+prefix = "%s/ERA5_Asia_202206-202207" % indir
+
+f_pres = "%s_pressure_level.nc" % prefix
+f_prcp = "%s_prcp.nc" % prefix
+
+ds_surf_raw = xr.open_dataset(f_prcp)
 ds_surf = ds_surf_raw.resample(time = "6h", restore_coord_dims = True).sum()
 
-ds_lev = xr.open_dataset("data/ERA5_202205_Asia.nc")
+ds_lev = xr.open_dataset(f_pres)
 ds = ds_lev.merge(ds_surf, join="inner")
 
 dates = xr_date(ds)
@@ -39,7 +45,7 @@ def plot_prcp(i = 0, p_prcp=True, lev=500):
   # 2. geoheight
   z = geoheight.sel(time = time)
   z.values = gaussian_filter(z.values, sigma = 3)
-  contour_z500(z, half=20)
+  contour_z(z, half=20)
   nsize = 100
   plot_maxmin_points(z, nsize, "max", "H", "red")
   plot_maxmin_points(z, nsize, "min", "L", "blue")
@@ -57,9 +63,12 @@ def plot_prcp(i = 0, p_prcp=True, lev=500):
   write_fig(fout, 10, 7.2, forward=False)
   # plt.savefig(fout)
 
-n = length(dates)
-# [plot_prcp(i) for i in range(0, n)]
 plot_prcp(1)
+
+# %%
+# 循环运行所有
+n = length(dates)
+[plot_prcp(i) for i in range(0, n)]
 
 # %%
 # files = glob("Figures/*.pdf")
@@ -68,6 +77,6 @@ from rbase import *
 pdfs = r_dir("Figures", "*.pdf")
 merge_pdf(pdfs, "ERA5_prcp.pdf", delete=False)
 
-imgs = r_dir("Figures/", "*.jpg")
-images2gif(imgs, "ERA5_prcp_202205.gif", duration=500)
+# imgs = r_dir("Figures/", "*.jpg")
+# images2gif(imgs, "ERA5_prcp_202205.gif", duration=500)
 # images2pdf(imgs, "ERA5_prcp_202205.pdf")

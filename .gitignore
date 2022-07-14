@@ -6,9 +6,9 @@ __pycache__
 # Directory
 bin
 # data
-
 gallery
 test
+*/temp
 
 # Figures
 *.pdf
